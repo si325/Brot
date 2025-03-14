@@ -38,7 +38,15 @@ let bird, pipes, gameOver, score;
 
 // Fungsi untuk inisialisasi game
 function initGame() {
-    bird = { x: 50, y: 250, width: 45, height: 35, velocity: 0, gravity: 0.5, jump: -8 };
+    bird = { 
+        x: 50, 
+        y: 250, 
+        width: 45, 
+        height: 35, 
+        velocity: 0, 
+        gravity: 0.3, // Gravitasi awal lebih ringan
+        jump: -6 // Lompatan yang cukup nyaman
+    };
     pipes = [];
     gameOver = false;
     score = 0;
@@ -47,7 +55,7 @@ function initGame() {
     bgMusic.currentTime = 0; // Mulai musik dari awal
     bgMusic.play();
 
-    requestAnimationFrame(update); // Memulai kembali update loop
+    requestAnimationFrame(update); // Memulai kembali loop update
 }
 
 // Fungsi untuk menggambar background
