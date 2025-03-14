@@ -12,7 +12,7 @@ canvas.height = 500;
 
 // Load gambar
 const bgImage = new Image();
-bgImage.src = "background.png"; // Gambar background
+bgImage.src = "background.png";
 
 const birdImage = new Image();
 birdImage.src = "bird.png";
@@ -22,6 +22,16 @@ pipeTopImage.src = "pipe_top.png";
 
 const pipeBottomImage = new Image();
 pipeBottomImage.src = "pipe_bottom.png";
+
+// Load suara
+const jumpSound = new Audio("jump.mp3");
+const hitSound = new Audio("hit.mp3");
+const scoreSound = new Audio("score.mp3");
+const bgMusic = new Audio("background-music.mp3");
+
+// Atur musik agar loop terus
+bgMusic.loop = true;
+bgMusic.volume = 0.5; // Sesuaikan volume jika terlalu keras
 
 // Variabel game
 let bird, pipes, gameOver, score;
@@ -33,6 +43,11 @@ function initGame() {
     gameOver = false;
     score = 0;
     restartButton.style.display = "none"; // Sembunyikan tombol restart
+
+    bgMusic.currentTime = 0; // Mulai musik dari awal
+    bgMusic.play();
+
+    requestAnimationFrame(update); // Memulai kembali update loop
 }
 
 // Fungsi untuk menggambar background
@@ -48,7 +63,7 @@ function drawBird() {
 // Fungsi untuk membuat pipa baru
 function createPipe() {
     let pipeHeight = Math.random() * (canvas.height / 2);
-    let gap = 150; // Jarak antara pipa atas & bawah
+    let gap = 160; // Jarak antara pipa atas & bawah
 
     pipes.push({ x: canvas.width, y: 0, width: 50, height: pipeHeight, type: "top" });
     pipes.push({ x: canvas.width, y: pipeHeight + gap, width: 50, height: canvas.height, type: "bottom" });
@@ -67,44 +82,60 @@ function drawPipes() {
 
 // Fungsi untuk update game
 function update() {
-    if (gameOver) return;
+    if (!gameOver) {
+        // Update posisi burung
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
 
-    // Update posisi burung
-    bird.velocity += bird.gravity;
-    bird.y += bird.velocity;
+        // Update pipa
+        pipes.forEach(pipe => pipe.x -= 2);
 
-    // Update pipa
-    pipes.forEach(pipe => pipe.x -= 2);
-
-    // Tambahkan pipa baru setiap jarak tertentu
-    if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250) {
-        createPipe();
-    }
-
-    // Hapus pipa yang keluar layar
-    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
-
-    // Deteksi tabrakan
-    pipes.forEach(pipe => {
-        if (bird.x < pipe.x + pipe.width && bird.x + bird.width > pipe.x &&
-            bird.y < pipe.y + pipe.height && bird.y + bird.height > pipe.y) {
-            gameOver = true;
+        // Tambahkan pipa baru setiap jarak tertentu
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250) {
+            createPipe();
         }
-    });
 
-    // Deteksi tabrakan dengan tanah atau langit
-    if (bird.y < 0 || bird.y + bird.height > canvas.height) {
-        gameOver = true;
-    }
+        // Hapus pipa yang keluar layar
+        pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
 
-    // Update skor
-    pipes.forEach((pipe, index) => {
-        if (index % 2 === 0 && bird.x === pipe.x + pipe.width) {
-            score++;
+        // Cek tabrakan dengan pipa
+        pipes.forEach(pipe => {
+            if (
+                bird.x < pipe.x + pipe.width &&
+                bird.x + bird.width > pipe.x &&
+                bird.y < pipe.y + pipe.height &&
+                bird.y + bird.height > pipe.y
+            ) {
+                if (!gameOver) {
+                    gameOver = true;
+                    bgMusic.pause(); // Hentikan musik latar
+                    hitSound.play(); // Mainkan suara tabrakan
+                    restartButton.style.display = "block"; // Tampilkan tombol restart
+                }
+            }
+        });
+
+        // Cek tabrakan dengan tanah atau langit
+        if (bird.y < 0 || bird.y + bird.height > canvas.height) {
+            if (!gameOver) {
+                gameOver = true;
+                bgMusic.pause(); // Hentikan musik latar
+                hitSound.play(); // Mainkan suara tabrakan
+                restartButton.style.display = "block"; // Tampilkan tombol restart
+            }
         }
-    });
 
-    draw();
+        // Update skor
+        pipes.forEach((pipe, index) => {
+            if (index % 2 === 0 && bird.x === pipe.x + pipe.width) {
+                score++;
+                scoreSound.play(); // Mainkan suara skor
+            }
+        });
+
+        draw();
+        requestAnimationFrame(update); // Memastikan loop terus berjalan
+    }
 }
 
 // Fungsi untuk menggambar elemen game
@@ -131,6 +162,7 @@ function draw() {
 // Fungsi untuk melompat
 function jump() {
     if (!gameOver) {
+        jumpSound.play(); // Mainkan suara lompat
         bird.velocity = bird.jump;
     }
 }
@@ -141,7 +173,11 @@ function restartGame() {
 }
 
 // Event listener untuk keyboard (spasi/klik)
-document.addEventListener("keydown", jump);
+document.addEventListener("keydown", function (event) {
+    if (event.code === "Space") {
+        jump();
+    }
+});
 
 // Event listener untuk tombol klik
 jumpButton.addEventListener("click", jump);
@@ -149,4 +185,3 @@ restartButton.addEventListener("click", restartGame);
 
 // Jalankan game
 initGame();
-setInterval(update, 20);
